@@ -225,8 +225,8 @@ class Snake(GameObject):
             Финальный счет сохраняется в файле и игра перезапускается.
             """
             with open('results.txt', 'a', encoding='utf-8') as f:
-                f.write(f'Дата, время: {now_str}. Длина змейки: {(
-                    len(self.positions) - 1)}\n')
+                f.write(f'Дата, время: {now_str}. \
+    Длина змейки: {(len(self.positions) - 1)}\n')
             self.results.append(len(self.positions))
             self.reset()
         """
