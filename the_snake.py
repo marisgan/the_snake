@@ -255,29 +255,48 @@ class AutoSnake(Snake):
         self.length = length
 
 
+def handle_quit():
+    """Выход из программы"""
+    pg.quit()
+    sys.exit()
+
+
+def handle_speed_change(snake, delta):
+    """Изменение скорости"""
+    new_speed = snake.speed + delta
+    if SPEED_MIN <= new_speed <= SPEED_MAX:
+        snake.speed = new_speed
+
+
+def handle_keydown(event, snake, poison1, poison2, poison3):
+    """Обработка нажатия клавиш"""
+    if event.key == pg.K_ESCAPE:
+        handle_quit()
+    elif event.key in ARROW_KEYS:
+        new_dir = NEW_DIR.get((snake.direction, event.key))
+        snake.update_direction(new_dir)
+    elif event.key == pg.K_q:
+        handle_speed_change(snake, -1)
+    elif event.key == pg.K_w:
+        handle_speed_change(snake, 1)
+    elif event.key == pg.K_0:
+        poison1.toggle()
+        poison2.toggle()
+        poison3.toggle()
+
+
+def handle_event(event, snake, poison1, poison2, poison3):
+    """Общая обработка событий"""
+    if event.type == pg.QUIT:
+        handle_quit()
+    elif event.type == pg.KEYDOWN:
+        handle_keydown(event, snake, poison1, poison2, poison3)
+
+
 def handle_keys(snake, poison1, poison2, poison3):
     """Функция обработки действий пользователя."""
     for event in pg.event.get():
-        if event.type == pg.QUIT:
-            pg.quit()
-            sys.exit()
-        elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_ESCAPE:
-                pg.quit()
-                sys.exit()
-            elif event.key in ARROW_KEYS:
-                new_dir = NEW_DIR.get((snake.direction, event.key))
-                snake.update_direction(new_dir)
-            elif event.key == pg.K_q:
-                if snake.speed > SPEED_MIN:
-                    snake.speed -= 1
-            elif event.key == pg.K_w:
-                if snake.speed < SPEED_MAX:
-                    snake.speed += 1
-            elif event.key == pg.K_0:
-                poison1.toggle()
-                poison2.toggle()
-                poison3.toggle()
+        handle_event(event, snake, poison1, poison2, poison3)
 
 
 def draw_grid():
