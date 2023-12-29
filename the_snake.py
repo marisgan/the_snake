@@ -226,11 +226,10 @@ class Snake(GameObject):
 
     def save_result(self):
         """Сохранить результат в файле"""
+        now = datetime.strftime(datetime.now(), '%d-%m-%Y, %H:%M:%S')
         with open('results.txt', 'a', encoding='utf-8') as f:
             f.write(
-                f'Дата, время: {
-                    datetime.strftime(datetime.now(), '%d-%m-%Y, %H:%M:%S')
-                }. '
+                f'Дата, время: {now}. '
                 f'Длина змейки: {len(self.positions)}\n'
             )
 
