@@ -481,3 +481,5 @@ class Game:
                     cow='elephant-in-snake'
                 )
             )
+        except (AssertionError, ModuleNotFoundError):
+            pass
