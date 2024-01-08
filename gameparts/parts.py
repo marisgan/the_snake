@@ -244,10 +244,8 @@ class Snake(GameObject):
             f'Изгиб питона. Вы на {self.mode_display}. '
             f'Длина: {self.length // GRID_SIZE} '
             f'(рекорд: {self.get_best_result()}) '
-            f'Скорость: {(
-                self.speed - EASY_START_SPEED
-            ) // SPEED_DELTA + 1} | '
-            f'ESC - выход | 1 - изи | 2 - хард | 3 - экстраз | 4 - боты'
+            f'Скорость: {(self.speed - EASY_START_SPEED) // SPEED_DELTA + 1} |'
+            f' ESC - выход | 1 - изи | 2 - хард | 3 - экстраз | 4 - боты'
         )
 
     def save_result(self):
