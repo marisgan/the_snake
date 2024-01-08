@@ -470,7 +470,7 @@ class Game:
         self.snake.move()
 
     def eat_elephant(self):
-        """Попытка отрисовать объект базового класса"""
+        """Попытка отрисовать объект базового класса."""
         try:
             self.elephant.draw()
         except DrawError as e:
@@ -481,5 +481,5 @@ class Game:
                     cow='elephant-in-snake'
                 )
             )
-        except (AssertionError, ModuleNotFoundError):
+        except AssertionError:
             pass
