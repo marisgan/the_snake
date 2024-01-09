@@ -3,6 +3,7 @@
 
 import pygame as pg
 
+
 # Размеры экрана и сетки
 GRID_SIZE = 40
 GRID_WIDTH = 22
@@ -57,16 +58,19 @@ SPEED_DELTA = 20
 EASY_START_SPEED = 200
 HARD_START_SPEED = EASY_START_SPEED * 2
 clock = pg.time.Clock()
-TIMER = 0
 # Правила переключения режимов скорости
-MODES = {
+MODES_SWITCH_RULES = {
     (EASY_START_SPEED, pg.K_2): HARD_START_SPEED,
     (HARD_START_SPEED, pg.K_1): EASY_START_SPEED
 }
+easy = 'ИЗИ'
+hard = 'ХАРД'
 MODES_DISPLAY = {
-    EASY_START_SPEED: 'ИЗИ',
-    HARD_START_SPEED: 'ХАРД'
+    EASY_START_SPEED: easy,
+    HARD_START_SPEED: hard
 }
 # Настройка игрового окна
+pg.init()
+FONT = pg.font.Font(None, 33)
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 surface = pg.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pg.SRCALPHA)
