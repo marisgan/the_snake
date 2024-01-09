@@ -117,7 +117,6 @@ class Snake(GameObject):
         self.best_result = {easy: 1, hard: 1}
         self.next_direction = None
         self.bot_capture_amount = 0
-        self.captured_bot = None
         self.reset()
 
     def toggle_snake(self):
@@ -136,6 +135,8 @@ class Snake(GameObject):
         self.direction = choice([UP, DOWN, LEFT, RIGHT])
         self.last = None
         self.eye_color = BOARD_BACKGROUND_COLOR
+        """Поле для обработки захваченного бота"""
+        self.captured_bot = None
 
     def switch_speed_mode(self, switch_status):
         """Метод для переключения между режимами скорости easy и hard.
@@ -414,15 +415,10 @@ class Game:
                     *[snack.position for snack in self.snacks]
                 )
             )
+            """Чтобы снизить хаос, временно выключаем захваченного бота"""
             if not self.snake.captured_bot:
                 bot.toggle_snake()
                 self.snake.captured_bot = bot
-
-    def handle_captured_bot(self):
-        """Возвращает к жизни захваченного бота"""
-        if self.snake.captured_bot:
-            self.snake.captured_bot.toggle_snake()
-            self.snake.captured_bot = None
 
     def handle_game_over(self):
         """Обработка окончания игры"""
@@ -430,7 +426,7 @@ class Game:
         self.snake.handle_records()
         self.snake.reset()
         self.screen_refresh()
-        self.handle_captured_bot()
+        self.handle_captured_bot(self.snake)
 
     def display_info(self):
         """Отображение дополнительной информации на экране"""
@@ -458,18 +454,20 @@ class Game:
         """Создает случайные повороты при движении бота"""
         bot.update_direction(choice(TURNS_BOT.get(bot.direction)))
 
-    def handle_user_events(self, snake, snacks, bots):
+    @classmethod
+    def handle_user_events(cls, snake, snacks, bots):
         """Общая обработка действий пользователя"""
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                self.handle_quit()
+                Game.handle_quit()
             if event.type == pg.KEYDOWN:
-                self.handle_keys(event.key, snake, snacks, bots)
+                Game.handle_key_down(event.key, snake, snacks, bots)
 
-    def handle_keys(self, key, snake, snacks, bots):
+    @classmethod
+    def handle_key_down(cls, key, snake, snacks, bots):
         """Обработка нажатия клавиш"""
         if key == pg.K_ESCAPE:
-            self.handle_quit()
+            Game.handle_quit()
         if key in [key for _, key in TURNS]:
             snake.update_direction(
                 TURNS.get((snake.direction, key))
@@ -478,14 +476,23 @@ class Game:
             snake.switch_speed_mode(
                 MODES_SWITCH_RULES.get((snake.speed_mode, key))
             )
-            self.screen_refresh()
+            Game.screen_refresh()
         if key == pg.K_3:
             [snack.toggle_snack() for snack in snacks]
-            self.screen_refresh()
+            Game.screen_refresh()
         if key == pg.K_4:
-            self.handle_captured_bot()
+            """Перед выключением ботов нужно обнулить статус
+            захваченного бота для корректной работы этой опции"""
+            Game.handle_captured_bot(snake)
             [bot.toggle_snake() for bot in bots]
-            self.screen_refresh()
+            Game.screen_refresh()
+
+    @classmethod
+    def handle_captured_bot(cls, snake):
+        """Возвращает к жизни захваченного бота"""
+        if snake.captured_bot:
+            snake.captured_bot.toggle_snake()
+            snake.captured_bot = None
 
     @staticmethod
     def screen_refresh():

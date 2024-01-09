@@ -7,6 +7,11 @@ from gameparts import (  # noqa
 )
 
 
+def handle_keys(snake, snacks, bots):
+    """Для прохождения автопроверки Pytest"""
+    Game.handle_user_events(snake, snacks, bots)
+
+
 def main():
     """Запуск игры"""
     pg.init()
@@ -17,7 +22,7 @@ def main():
     [snack.toggle_snack() for snack in game.snacks[1:]]
     while True:
         clock.tick(game.snake.speed)
-        game.handle_user_events(game.snake, game.snacks[1:], game.bots)
+        handle_keys(game.snake, game.snacks[1:], game.bots)
         game.snake.show_info()
         game.move_snakes()
         game.handle_selfbite()
@@ -32,7 +37,7 @@ def main():
         if not timer % 200:
             game.handle_bot_turns(game.bots[1])
         if not timer % 2000:
-            game.handle_captured_bot()
+            Game.handle_captured_bot(game.snake)
         screen.blit(surface, (0, 0))
         game.draw_objects()
         game.display_info()
