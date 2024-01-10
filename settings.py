@@ -1,4 +1,3 @@
-# constants.py
 """Модуль, содержащий константы и переменные проекта THE_SNAKE"""
 
 import pygame as pg
@@ -34,7 +33,7 @@ TURNS_BOT = {
     UP: (UP, LEFT, RIGHT),
     DOWN: (DOWN, LEFT, RIGHT)
 }
-# Цвета в формате RGB
+# Цвета в формате RGB(A)
 BOARD_BACKGROUND_COLOR = (27, 27, 30)
 STEALTH_COLOR = (0, 0, 0, 0)
 TEXT_COLOR = (240, 240, 240)
@@ -57,20 +56,15 @@ SNACK_COLORS = [
 SPEED_DELTA = 20
 EASY_START_SPEED = 200
 HARD_START_SPEED = EASY_START_SPEED * 2
-clock = pg.time.Clock()
+MAX_SPEED = 800
 # Правила переключения режимов скорости
 MODES_SWITCH_RULES = {
     (EASY_START_SPEED, pg.K_2): HARD_START_SPEED,
     (HARD_START_SPEED, pg.K_1): EASY_START_SPEED
 }
-easy = 'ИЗИ'
-hard = 'ХАРД'
+EASY = 'ИЗИ'
+HARD = 'ХАРД'
 MODES_DISPLAY = {
-    EASY_START_SPEED: easy,
-    HARD_START_SPEED: hard
+    EASY_START_SPEED: EASY,
+    HARD_START_SPEED: HARD
 }
-# Настройка игрового окна
-pg.init()
-FONT = pg.font.Font(None, 33)
-screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-surface = pg.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pg.SRCALPHA)
