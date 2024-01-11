@@ -33,9 +33,8 @@ TURNS_BOT = {
     UP: (UP, LEFT, RIGHT),
     DOWN: (DOWN, LEFT, RIGHT)
 }
-# Цвета в формате RGB(A)
+# Цвета в формате RGB
 BOARD_BACKGROUND_COLOR = (27, 27, 30)
-STEALTH_COLOR = (0, 0, 0, 0)
 TEXT_COLOR = (240, 240, 240)
 SNAKE_COLOR = (240, 190, 40)
 APPLE_COLOR = (240, 30, 90)

@@ -8,7 +8,7 @@ from pygame import gfxdraw
 from settings import (
     GRID_SIZE, GRID_WIDTH, GRID_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
     CENTER, UP, DOWN, LEFT, RIGHT, BOARD_BACKGROUND_COLOR,
-    STEALTH_COLOR, TEXT_COLOR, SNAKE_COLOR, APPLE_COLOR, BOT_COLORS,
+    TEXT_COLOR, SNAKE_COLOR, APPLE_COLOR, BOT_COLORS,
     SNACK_COLORS, SPEED_DELTA, EASY_START_SPEED, MAX_SPEED, TURNS, TURNS_BOT,
     MODES_SWITCH_RULES, EASY, HARD, MODES_DISPLAY
 )
@@ -20,7 +20,6 @@ screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 surface = pg.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pg.SRCALPHA)
 GAME_FONT = pg.font.Font(None, 33)
 clock = pg.time.Clock()
-timer = 0
 
 
 class GameObject:
@@ -30,6 +29,11 @@ class GameObject:
         """Инициализирует цвет и начальное положение"""
         self.body_color = color
         self.position = CENTER
+        self.is_active = True
+
+    def toggle_object(self):
+        """Отключает и включает игровые объекты"""
+        self.is_active = not self.is_active
 
     def randomize_position(self, busy_cells=None):
         """Метод меняет позицию объекта на случайную из возможных"""
@@ -67,9 +71,8 @@ class GameObject:
     def draw(self):
         """Абстрактный метод для реализации в дочерних классах"""
         raise NotImplementedError(
-            f'Абстрактный метод draw() базового класса '
-            f'{self.__class__.__name__} не знает,'
-            f'как отрисовывать объекты'
+            f'Абстрактный метод draw() базового класса {type(self)}'
+            'не знает, как отрисовывать объекты.'
         )
 
 
@@ -80,9 +83,7 @@ class Apple(GameObject):
         """Инициализация яблока"""
         super().__init__(color)
         self.randomize_position(busy_cells)
-        self.power = self.initial_power = power
-        self.initial_color = color
-        self.toggle_status = False
+        self.power = power
 
     def draw(self):
         """Отрисовка яблока"""
@@ -91,7 +92,7 @@ class Apple(GameObject):
 
     def display_power(self):
         """Отображение силы яблока"""
-        if not self.toggle_status:
+        if self.is_active:
             surface.blit(
                 GAME_FONT.render(
                     f'{self.power:+}',
@@ -103,20 +104,6 @@ class Apple(GameObject):
                 )
             )
 
-    def toggle_snack(self):
-        """Отключает и включает яблоки"""
-        self.toggle_status = (
-            True
-            if self.toggle_status is False else
-            False
-        )
-        self.body_color = (
-            STEALTH_COLOR
-            if self.body_color != STEALTH_COLOR else
-            self.initial_color
-        )
-        self.power = 0 if self.power != 0 else self.initial_power
-
 
 class Snake(GameObject):
     """Класс змеи"""
@@ -125,29 +112,12 @@ class Snake(GameObject):
         """Инициализация змеи. Методом reset получаем данные для старта."""
         super().__init__(color)
         self.initial_length = length * GRID_SIZE
-        self.initial_color = color
         self.speed_mode = EASY_START_SPEED
+        self.new_speed_mode = None
         self.mode_display = EASY
         self.best_result = {EASY: 1, HARD: 1}
         self.next_direction = None
-        self.bot_capture_amount = 0
-        self.toggle_status = False
         self.reset()
-
-    def toggle_snake(self):
-        """Метод для включения и отключения змеи"""
-        self.toggle_status = (
-            True if self.toggle_status is False else
-            False
-        )
-        self.body_color = (
-            STEALTH_COLOR if self.body_color != STEALTH_COLOR else
-            self.initial_color
-        )
-        self.eye_color = (
-            STEALTH_COLOR if self.eye_color != STEALTH_COLOR else
-            BOARD_BACKGROUND_COLOR
-        )
 
     def reset(self, busy_cells=None):
         """Сброс в начальную позицию"""
@@ -157,19 +127,6 @@ class Snake(GameObject):
         self.speed = self.speed_mode
         self.direction = choice([UP, DOWN, LEFT, RIGHT])
         self.last = None
-        self.eye_color = BOARD_BACKGROUND_COLOR
-
-    def switch_speed_mode(self, switch_status):
-        """Метод для переключения между режимами скорости easy и hard. Если
-        пользователь переключил режим, то перед сменой режима фиксируем
-        рекорд и сохраняем результат.
-        """
-        if switch_status != self.speed_mode:
-            self.handle_records()
-            self.save_result()
-            self.speed_mode = switch_status
-            self.mode_display = MODES_DISPLAY[switch_status]
-            self.reset()
 
     def draw(self):
         """Отрисовка змеи"""
@@ -177,30 +134,44 @@ class Snake(GameObject):
         if self.last:
             self.erase_cell(
                 self.last,
-                cell_color=(
-                    STEALTH_COLOR if self.toggle_status else
-                    BOARD_BACKGROUND_COLOR
-                )
+                cell_color=BOARD_BACKGROUND_COLOR
             )
         """Отрисовка глаза с использованием anti-aliasing"""
         gfxdraw.aacircle(
-            screen,
+            surface,
             self.get_head_position()[0] + GRID_SIZE // 2,
             self.get_head_position()[1] + GRID_SIZE // 2,
             GRID_SIZE // 6,
-            self.eye_color
+            BOARD_BACKGROUND_COLOR
         )
         gfxdraw.filled_circle(
-            screen,
+            surface,
             self.get_head_position()[0] + GRID_SIZE // 2,
             self.get_head_position()[1] + GRID_SIZE // 2,
             GRID_SIZE // 6,
-            self.eye_color
+            BOARD_BACKGROUND_COLOR
         )
 
     def update_direction(self, new_direction):
         """Метод обновляет направление после нажатия на стрелку"""
         self.next_direction = new_direction
+
+    def update_speed_mode(self, new_speed_mode):
+        """Метод обновляет поле для фиксации нажатия
+        на клавиши 1 и 2, сменяющие режим
+        """
+        self.new_speed_mode = new_speed_mode
+
+    def handle_speed_mode_change(self):
+        """Обработка ситуации смены режимов изи и хард"""
+        if self.new_speed_mode:
+            self.handle_records()
+            self.save_result()
+            self.speed_mode = self.new_speed_mode
+            self.mode_display = MODES_DISPLAY[self.new_speed_mode]
+            self.new_speed_mode = None
+            self.reset()
+            Game.screen_refresh()
 
     def get_head_position(self):
         """Метод возвращает текущее положение головы"""
@@ -274,38 +245,26 @@ class Snake(GameObject):
                 )
 
     def speed_affect(self, power):
-        """Метод для изменения скорости"""
+        """Метод для изменения скорости после съедения яблок"""
         if power >= 0:
             if not (self.length // GRID_SIZE) % 3:
-                self.speed += (
-                    SPEED_DELTA %
-                    (MAX_SPEED + SPEED_DELTA - self.speed)
-                )
+                self.speed = min(self.speed + SPEED_DELTA, MAX_SPEED)
             return
-        self.speed -= (
-            SPEED_DELTA %
-            (self.speed - (self.speed_mode - SPEED_DELTA))
-        )
+        self.speed = max(self.speed - SPEED_DELTA, self.speed_mode)
 
     def length_affect(self, power):
-        """Метод для изменения длины змеи"""
-        if power >= 0:
-            self.length += power * GRID_SIZE
-            return
-        if 1 <= len(self.positions) // GRID_SIZE < (abs(power) + 1):
-            self.length -= GRID_SIZE
-            self.erase_snake_parts(GRID_SIZE)
-        if len(self.positions) // GRID_SIZE > abs(power):
-            self.length += power * GRID_SIZE
+        """Метод для изменения длины змеи после съедения яблок"""
+        self.length = max(self.length + power * GRID_SIZE, GRID_SIZE)
+        if power < 0:
             self.erase_snake_parts(abs(power) * GRID_SIZE)
 
     def erase_snake_parts(self, cell_num):
         """Метод для стирания нескольких блоков из хвоста змеи
         (после съедения яблок с отрицательной силой)
         """
-        if cell_num < len(self.positions):
-            for _ in range(cell_num):
-                self.erase_cell(self.positions.pop())
+        cell_num = min(cell_num, len(self.positions) - GRID_SIZE)
+        for _ in range(cell_num):
+            self.erase_cell(self.positions.pop())
 
 
 class Game:
@@ -320,6 +279,9 @@ class Game:
         hold_cells = [*self.snake.positions]
         self.apple = Apple(busy_cells=hold_cells)
         hold_cells.append(self.apple.position)
+        self.bot_capture_amount = 0
+        self.captured_bot = None
+        self.timer = 0
         """Инициализация ботов"""
         self.bots = []
         for num in range(2, 4):
@@ -331,7 +293,7 @@ class Game:
                 length=length
             )
             self.bots.append(bot)
-            hold_cells.append(bot.positions)
+            hold_cells.extend(bot.positions)
         """Инициализация яблок разных видов"""
         self.snacks = [self.apple]
         for num in range(-3, 4):
@@ -344,14 +306,13 @@ class Game:
             )
             self.snacks.append(snack)
             hold_cells.append(snack.position)
-        self.captured_bot = None
 
     def handle_eat_snack(self, snack):
         """Если змейка съедает неспрятанное яблоко, то сила яблока
         меняет ее длину и скорость, а яблоко перемещается.
         """
         if (
-            not snack.toggle_status
+            snack.is_active
             and self.is_collision(
                 self.snake.get_head_position(),
                 snack.position
@@ -380,8 +341,8 @@ class Game:
         то сила яблока меняет его длину, а яблоко перемещается.
         """
         if (
-            not bot.toggle_status
-            and not snack.toggle_status
+            bot.is_active
+            and snack.is_active
             and self.is_collision(
                 bot.get_head_position(),
                 snack.position
@@ -409,7 +370,7 @@ class Game:
         """
         for pos in bot.positions:
             if (
-                not bot.toggle_status
+                bot.is_active
                 and self.snake.length > GRID_SIZE
                 and bot.length > GRID_SIZE
                 and self.is_collision(
@@ -418,22 +379,16 @@ class Game:
                 )
             ):
                 self.handle_game_over()
-                [bot.reset(
-                    (
-                        *self.snake.positions,
-                        *[snack.position for snack in self.snacks]
-                    )
-                ) for bot in self.bots]
 
     def handle_bot_capture(self, bot):
         """Захват змеебота, т.е. если змеебот врезается в змейку"""
         if (
-            not bot.toggle_status
+            bot.is_active
             and bot.get_head_position() in self.snake.positions[GRID_SIZE:]
         ):
             self.snake.length_affect(bot.length // GRID_SIZE)
             self.snake.speed_affect(power=1)
-            self.snake.bot_capture_amount += 1
+            self.bot_capture_amount += 1
             [bot.erase_cell(pos) for pos in bot.positions[GRID_SIZE:]]
             bot.reset(
                 (
@@ -444,14 +399,14 @@ class Game:
             )
             """Чтобы снизить хаос, временно выключаем захваченного бота"""
             if not self.captured_bot:
-                bot.toggle_snake()
+                bot.toggle_object()
                 self.captured_bot = bot
 
     @classmethod
     def handle_captured_bot(cls, self):
         """Возвращает к жизни захваченного бота"""
         if self.captured_bot:
-            self.captured_bot.toggle_snake()
+            self.captured_bot.toggle_object()
             self.captured_bot = None
 
     def handle_game_over(self):
@@ -464,29 +419,33 @@ class Game:
 
     def display_info(self):
         """Отображение дополнительной информации на экране"""
-        if self.snake.bot_capture_amount > 0:
+        if self.bot_capture_amount > 0:
             screen.blit(
                 GAME_FONT.render(
                     f'Пошла охота на змееботов! '
-                    f'Вы захватили: {self.snake.bot_capture_amount} шт.',
+                    f'Вы захватили: {self.bot_capture_amount} шт.',
                     True, TEXT_COLOR
                 ),
                 (GRID_SIZE // 3, GRID_SIZE // 4))
 
-    def draw_objects(self):
-        """Отрисовка всех объектов"""
-        [snack.draw() for snack in self.snacks]
-        [bot.draw() for bot in self.bots]
-        self.snake.draw()
+    def handle_objects_activity(self):
+        """Отрисовывает и двигает объекты в зависимости
+        от их статуса активности
+        """
+        for snack in self.snacks:
+            if snack.is_active:
+                snack.draw()
+        for bot in self.bots:
+            if bot.is_active:
+                bot.draw()
+                bot.move()
+                self.make_bots_turns()
 
-    def move_snakes(self):
-        """Движение всех змеев"""
-        global timer
-        self.snake.move()
-        [bot.move() for bot in self.bots]
-        if not timer % 140:
+    def make_bots_turns(self):
+        """Поворачивает ботов по таймеру"""
+        if not self.timer % 140:
             self.handle_bot_turns(self.bots[0])
-        if not timer % 200:
+        if not self.timer % 200:
             self.handle_bot_turns(self.bots[1])
 
     def handle_bot_turns(self, bot):
@@ -507,25 +466,30 @@ class Game:
         """Обработка нажатия клавиш"""
         if key == pg.K_ESCAPE:
             Game.handle_quit()
-        if key in [key for _, key in TURNS]:
+        if (
+            key == pg.K_UP or key == pg.K_DOWN
+            or key == pg.K_LEFT or key == pg.K_RIGHT
+        ):
             snake.update_direction(
                 TURNS.get((snake.direction, key))
             )
-        if key in [key for _, key in MODES_SWITCH_RULES]:
-            snake.switch_speed_mode(
+        if key == pg.K_1 or key == pg.K_2:
+            snake.update_speed_mode(
                 MODES_SWITCH_RULES.get(
-                    (snake.speed_mode, key),
-                    snake.speed_mode)
+                    (snake.speed_mode, key))
             )
             Game.screen_refresh()
         if key == pg.K_3:
-            [snack.toggle_snack() for snack in snacks]
+            for snack in snacks:
+                snack.toggle_object()
             Game.screen_refresh()
         if key == pg.K_4:
-            """Перед выключением ботов нужно обнулить статус
-            захваченного бота для корректной работы этой опции"""
+            """Перед выключением ботов - нужно обнулить статус
+            захваченного бота для корректной работы этой опции
+            """
             Game.handle_captured_bot(game)
-            [bot.toggle_snake() for bot in bots]
+            for bot in bots:
+                bot.toggle_object()
             Game.screen_refresh()
 
     @staticmethod
@@ -538,8 +502,8 @@ class Game:
         """Метод проверяет, есть ли столкновение"""
         x1, y1 = position1
         x2, y2 = position2
-        distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-        return distance < threshold
+        distance = (x2 - x1) ** 2 + (y2 - y1) ** 2
+        return distance < threshold ** 2
 
     @staticmethod
     def handle_quit():
@@ -556,26 +520,31 @@ def handle_keys(game, snake, snacks, bots):
 def main():
     """Запуск игры"""
     game = Game()
-    global timer
     Game.screen_refresh()
-    [bot.toggle_snake() for bot in game.bots]
-    [snack.toggle_snack() for snack in game.snacks[1:]]
+    for bot in game.bots:
+        bot.toggle_object()
+    for snack in game.snacks[1:]:
+        snack.toggle_object()
     while True:
         clock.tick(game.snake.speed)
-        timer += 1
+        game.timer += 1
         handle_keys(game, game.snake, game.snacks[1:], game.bots)
         game.snake.show_info()
-        game.move_snakes()
+        game.snake.handle_speed_mode_change()
+        game.snake.move()
         game.handle_selfbite()
-        [game.handle_eat_snack(snack) for snack in game.snacks]
+        game.handle_objects_activity()
+        for snack in game.snacks:
+            game.handle_eat_snack(snack)
         for bot in game.bots:
             game.handle_smash(bot)
             game.handle_bot_capture(bot)
-            [game.handle_steal_snack(bot, snack) for snack in game.snacks]
-        if not timer % 2000:
+            for snack in game.snacks:
+                game.handle_steal_snack(bot, snack)
+        if not game.timer % 2000:
             Game.handle_captured_bot(game)
         screen.blit(surface, (0, 0))
-        game.draw_objects()
+        game.snake.draw()
         game.display_info()
         pg.display.update()
 
