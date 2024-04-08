@@ -8,7 +8,7 @@ from pygame import gfxdraw
 from settings import (
     GRID_SIZE, GRID_WIDTH, GRID_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
     CENTER, UP, DOWN, LEFT, RIGHT, BOARD_BACKGROUND_COLOR,
-    TEXT_COLOR, SNAKE_COLOR, APPLE_COLOR, BOT_COLORS,
+    TEXT_COLOR, SNAKE_COLOR, APPLE_COLOR, BOT_COLORS, STEALTH_COLOR,
     SNACK_COLORS, SPEED_DELTA, EASY_START_SPEED, MAX_SPEED, TURNS, TURNS_BOT,
     MODES_SWITCH_RULES, EASY, HARD, MODES_DISPLAY
 )
@@ -240,7 +240,7 @@ class Snake(GameObject):
                 f.write(
                     f'Дата, время: {now}. '
                     f'Длина змейки: {self.length // GRID_SIZE}. '
-                    f'Скорость: {self.speed}. '
+                    f'Скорость: {(self.speed - EASY_START_SPEED) // SPEED_DELTA + 1}. '
                     f'Режим: {self.mode_display}\n'
                 )
 
